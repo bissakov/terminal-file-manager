@@ -1,1 +1,3 @@
 prettytable
+keyboard
+colorama
