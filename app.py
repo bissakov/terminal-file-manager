@@ -34,7 +34,6 @@ class Table:
 class App:
     def __init__(self, root) -> None:
         self.items = os.listdir(root)
-        # self.items = list(range(1, 101))
         self.terminal_height: int = os.get_terminal_size().lines
         self.terminal_width: int = os.get_terminal_size().columns
         self.visible_items = self.items[0:0+self.terminal_height - 4]
@@ -73,7 +72,6 @@ class App:
 
     def __main(self, stdscr) -> None:
         curses.curs_set(0)
-        # stdscr.clear()
 
         self.__init_print(stdscr)
 
@@ -83,21 +81,18 @@ class App:
                 break
 
             if key == curses.KEY_DOWN:
-                if self.x < self.terminal_height - 2:# and self.visible_items[-1] != self.items[-1]:
+                if self.x < self.terminal_height - 2:
                     self.x += 1
                     x = self.x - self.header_size
                     self.__print_line(stdscr, self.x - 1, self.lines[x - 1])
                     self.__print_line(stdscr, self.x, self.lines[x], curses.A_STANDOUT)
-                    # self.visible_items = self.items[self.x - len(self.items):self.x - len(self.items) + os.get_terminal_size().lines]
                 else:
                     x = self.x - self.header_size
                     self.__print_line(stdscr, self.x, self.lines[x])
                     self.x = self.header_size
                     x = self.x - self.header_size
                     self.__print_line(stdscr, self.x, self.lines[x], curses.A_STANDOUT)
-                # self.x =  if self.x == len(self.visible_items) - 1 else self.x + 1
             elif key == curses.KEY_UP:
-                # self.x = 0 if self.x <= 0 else self.x - 1
                 if self.x <= self.header_size:
                     x = self.x - self.header_size
                     self.__print_line(stdscr, self.x, self.lines[x])
@@ -119,14 +114,3 @@ if __name__ == '__main__':
     root = 'D:\\Work'
     app = App(root=root)
     app.run()
-
-    # root = 'D:\\Work'
-    # items = os.listdir(root)
-    # terminal_height: int = os.get_terminal_size().lines
-    # terminal_width: int = os.get_terminal_size().columns
-    # visible_items = items[0:0 + terminal_height - 4]
-    # table = PrettyTable(['#'])
-    # table.align['Name'] = 'l'
-    # indices = [[i] for i in range(len(visible_items))]
-    # table.add_rows(indices)
-    # print(str(table).split('\n')[4::][:-1])
