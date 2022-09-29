@@ -1,6 +1,4 @@
-import prettytable
 from prettytable import PrettyTable
-import keyboard
 import os
 import curses
 from curses import wrapper
