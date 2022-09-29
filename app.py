@@ -70,7 +70,7 @@ class App:
 
         stdscr.refresh()
 
-    def __print_line(self, stdscr, pos_y, line, color=curses.A_NORMAL):
+    def __print_line(self, stdscr, pos_y, line, color=curses.A_NORMAL) -> None:
         stdscr.addstr(pos_y, self.table_start, line, color)
 
     def __main(self, stdscr) -> None:
