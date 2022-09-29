@@ -1,63 +1,134 @@
+import prettytable
 from prettytable import PrettyTable
 import keyboard
 import os
+import curses
+from curses import wrapper
 
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
 
-class Controller():
-    def __init__(self):
-        self.x = 0
-        root = 'D:\Work'
+class Table:
+    def __init__(self, title, rows) -> None:
+        table = PrettyTable()
+        table.title = title
+        table.field_names = ['#', 'Name', 'Extension', 'Type', 'Date created', 'Date modified', 'Size']
+        table.align['#'] = 'r'
+        table.add_rows([self.__get_row(i, item) for i, item in enumerate(rows)])
+        self.table = table
+        self.all_lines = str(table).split('\n')
+
+    def __get_row(self, i: int, item: str) -> list:
+        return [i + 1, item, '', 'Folder', '28.09.2022 21:40:30', '29.09.2022 11:05:16', '1.25Gb']
+
+    def align(self) -> None:
+        self.table.align['Name'] = 'l'
+        self.all_lines = str(self.table).split('\n')
+
+    def get_header(self) -> list:
+        return self.all_lines[0:5]
+
+    def get_footer(self) -> list:
+        return self.all_lines[-1:]
+
+    def get_lines(self) -> list:
+        return self.all_lines[5::][:-1]
+
+
+class App:
+    def __init__(self, root) -> None:
         self.items = os.listdir(root)
-        self.active_items = []
-        self.size = 0
-        self.table = PrettyTable()
+        # self.items = list(range(1, 101))
+        self.terminal_height: int = os.get_terminal_size().lines
+        self.terminal_width: int = os.get_terminal_size().columns
+        self.visible_items = self.items[0:0+self.terminal_height - 4]
 
-    def hook_controls(self):
-        keyboard.add_hotkey('up', self.go_up)
-        keyboard.add_hotkey('down', self.go_down)
+        table_obj = Table(root, self.items)
+        self.header = table_obj.get_header()
+        self.header_size = len(self.header)
+        self.footer = table_obj.get_footer()
+        table_obj.align()
+        self.lines = table_obj.get_lines()
+        self.work_height = self.terminal_height - self.header_size - 1
+        self.table_width = len(self.lines[0])
+        self.table_start = (self.terminal_width - self.table_width) // 2
 
-        keyboard.wait('esc')
+        self.escape_chars = [27, 113, 1081]
 
-    def go_up(self):
-        self.x -= 1
-        if self.x < 0:
-            self.x = len(self.items) - 1
-            # self.x = 0
-            # return
-        self.print_table()
+        self.x = self.header_size
 
-    def go_down(self):
-        self.x += 1
-        if self.x > len(self.items) - 1:
-            self.x = 0
-        self.print_table()
+    def __init_print(self, stdscr) -> None:
+        for i, line in enumerate(self.header):
+            stdscr.addstr(i, self.table_start, line)
+        rows = self.lines[self.x - self.header_size:self.x + self.work_height - self.header_size]
+        for i, line in enumerate(rows, start=self.header_size):
+            if i == self.header_size:
+                stdscr.addstr(i, self.table_start, line, curses.A_STANDOUT)
+                continue
+            stdscr.addstr(i, self.table_start, line)
+        st = self.header_size + (len(self.visible_items) if len(self.items) < self.terminal_height else self.work_height)
+        for i, line in enumerate(self.footer, start=st):
+            stdscr.addstr(i, self.table_start, line)
 
-    def print_table(self):
-        self.active_items = self.items[self.x : self.x + os.get_terminal_size().lines - 1]
-        self.size = len(self.active_items)
-        self.cls()
-        for i in range(0, self.x + self.size):
-            line = bcolors.WARNING + self.items[i] + bcolors.ENDC if i == self.x else self.items[i]
-            self.table.add_row([i, line])
-        print(self.table)
-        print('\033[?25l', end='')
+        stdscr.refresh()
 
-    def cls(self):
-        self.table = PrettyTable()
-        self.table.align = 'l'
-        self.table.field_names = ['Index', 'Name']
-        os.system('cls' if os.name=='nt' else 'clear')
+    def __print_line(self, stdscr, pos_y, line, color=curses.A_NORMAL):
+        stdscr.addstr(pos_y, self.table_start, line, color)
 
-if __name__ == '__main__':    
-    controller = Controller()
-    controller.hook_controls()
+    def __main(self, stdscr) -> None:
+        curses.curs_set(0)
+        # stdscr.clear()
+
+        self.__init_print(stdscr)
+
+        while True:
+            key = stdscr.getch()
+            if key in self.escape_chars:
+                break
+
+            if key == curses.KEY_DOWN:
+                if self.x < self.terminal_height - 2:# and self.visible_items[-1] != self.items[-1]:
+                    self.x += 1
+                    x = self.x - self.header_size
+                    self.__print_line(stdscr, self.x - 1, self.lines[x - 1])
+                    self.__print_line(stdscr, self.x, self.lines[x], curses.A_STANDOUT)
+                    # self.visible_items = self.items[self.x - len(self.items):self.x - len(self.items) + os.get_terminal_size().lines]
+                else:
+                    x = self.x - self.header_size
+                    self.__print_line(stdscr, self.x, self.lines[x])
+                    self.x = self.header_size
+                    x = self.x - self.header_size
+                    self.__print_line(stdscr, self.x, self.lines[x], curses.A_STANDOUT)
+                # self.x =  if self.x == len(self.visible_items) - 1 else self.x + 1
+            elif key == curses.KEY_UP:
+                # self.x = 0 if self.x <= 0 else self.x - 1
+                if self.x <= self.header_size:
+                    x = self.x - self.header_size
+                    self.__print_line(stdscr, self.x, self.lines[x])
+                    self.x = self.terminal_height - 2 if len(self.items) >= self.terminal_height else len(self.items) + 4
+                    x = self.x - self.header_size
+                    self.__print_line(stdscr, self.x, self.lines[x], curses.A_STANDOUT)
+                else:
+                    self.x -= 1
+                    x = self.x - self.header_size
+                    self.__print_line(stdscr, self.x, self.lines[x], curses.A_STANDOUT)
+                    self.__print_line(stdscr, self.x + 1, self.lines[x + 1], curses.A_NORMAL)
+            stdscr.addstr(1, 5, f'{self.x-4:02}', curses.A_BOLD)
+
+    def run(self) -> None:
+        wrapper(self.__main)
+
+
+if __name__ == '__main__':
+    root = 'D:\\Work'
+    app = App(root=root)
+    app.run()
+
+    # root = 'D:\\Work'
+    # items = os.listdir(root)
+    # terminal_height: int = os.get_terminal_size().lines
+    # terminal_width: int = os.get_terminal_size().columns
+    # visible_items = items[0:0 + terminal_height - 4]
+    # table = PrettyTable(['#'])
+    # table.align['Name'] = 'l'
+    # indices = [[i] for i in range(len(visible_items))]
+    # table.add_rows(indices)
+    # print(str(table).split('\n')[4::][:-1])
