@@ -1,6 +1,6 @@
 # terminal-file-manager
 
-![Alt text](assets/screenshot.png?raw=true "Title")
+![Alt text](assets/terminal.gif?raw=true "Title")
 
 Use virtual environment
 ```
