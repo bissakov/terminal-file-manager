@@ -1,5 +1,7 @@
 # terminal-file-manager
 
+![Alt text](assets/screenshot.png?raw=true "Title")
+
 Use virtual environment
 ```
 python3 -m venv myvenv
