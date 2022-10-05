@@ -15,13 +15,6 @@ class Placeholder:
         self.names = os.listdir(self.root)
         self.items = []
         for i, name in enumerate(self.names, start=1):
-            # row = self.get_template()
-            # row['#'] = i
-            # row['Name'] = name
-            # row['Type'] = self.get_type(name)
-            # row['Date created'] = self.get_creation_date(name)
-            # row['Date modified'] = self.get_modification_date(name)
-            # row['Size'] = self.get_size(name=name)
             self.items.append([
                 i,
                 name,
@@ -66,16 +59,6 @@ class Placeholder:
 
     def convert_from_unix(self, ts):
         return datetime.fromtimestamp(ts).strftime('%d-%m-%Y %H:%M:%S')
-
-    def get_template(self):
-        return {
-            '#': 0,
-            'Name': '',
-            'Type': '',
-            'Date created': '',
-            'Date modified': '',
-            'Size': ''
-        }
 
 
 class Table:
