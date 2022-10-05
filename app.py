@@ -1,24 +1,100 @@
 from prettytable import PrettyTable
 import os
+from os.path import join, isfile, getctime, getmtime, getsize
 import curses
 from curses import wrapper
+import platform
+from datetime import datetime
+import math
+
+
+# Needs to be changed
+class Placeholder:
+    def __init__(self, root):
+        self.root = root
+        self.names = os.listdir(self.root)
+        self.items = []
+        for i, name in enumerate(self.names, start=1):
+            # row = self.get_template()
+            # row['#'] = i
+            # row['Name'] = name
+            # row['Type'] = self.get_type(name)
+            # row['Date created'] = self.get_creation_date(name)
+            # row['Date modified'] = self.get_modification_date(name)
+            # row['Size'] = self.get_size(name=name)
+            self.items.append([
+                i,
+                name,
+                self.get_type(name),
+                self.get_creation_date(name),
+                self.get_modification_date(name),
+                self.get_size(name)
+            ])
+
+    def get_type(self, name):
+        return 'File' if isfile(join(self.root, name)) else 'Folder'
+
+    def get_creation_date(self, name):
+        _path = join(self.root, name)
+        if platform.system() == 'Windows':
+            return self.convert_from_unix(getctime(_path))
+        else:
+            stat = os.stat(_path)
+            try:
+                return self.convert_from_unix(stat.st_birthtime)
+            except AttributeError:
+                return self.convert_from_unix(stat.st_mtime)
+
+    def get_modification_date(self, name):
+        _path = join(self.root, name)
+        if platform.system() == 'Windows':
+            return self.convert_from_unix(getmtime(_path))
+        return None
+
+    def get_size(self, name):
+        if self.get_type(name) == 'Folder':
+            return ''
+        _path = join(self.root, name)
+        size_bytes = getsize(_path)
+        if size_bytes == 0:
+            return '0B'
+        size_name = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
+        i = int(math.floor(math.log(size_bytes, 1024)))
+        p = math.pow(1024, i)
+        s = round(size_bytes / p)
+        return '%s %s' % (s, size_name[i])
+
+    def convert_from_unix(self, ts):
+        return datetime.fromtimestamp(ts).strftime('%d-%m-%Y %H:%M:%S')
+
+    def get_template(self):
+        return {
+            '#': 0,
+            'Name': '',
+            'Type': '',
+            'Date created': '',
+            'Date modified': '',
+            'Size': ''
+        }
 
 
 class Table:
     def __init__(self, title, rows) -> None:
         table = PrettyTable()
         table.title = title
-        table.field_names = ['#', 'Name', 'Extension', 'Type', 'Date created', 'Date modified', 'Size']
+        table.field_names = ['#', 'Name', 'Type', 'Date created', 'Date modified', 'Size']
         table.align['#'] = 'r'
-        table.add_rows([self.__get_row(i, item) for i, item in enumerate(rows)])
+        table.align['Type'] = 'm'
+        table.add_rows(rows)
         self.table = table
         self.all_lines = str(table).split('\n')
 
     def __get_row(self, i: int, item: str) -> list:
-        return [i + 1, item, '', 'Folder', '28.09.2022 21:40:30', '29.09.2022 11:05:16', '1.25Gb']
+        return [i + 1, item, 'Folder', '28.09.2022 21:40:30', '29.09.2022 11:05:16', '1.25Gb']
 
     def align(self) -> None:
         self.table.align['Name'] = 'l'
+        self.table.align['Type'] = 'l'
         self.all_lines = str(self.table).split('\n')
 
     def get_header(self) -> list:
@@ -33,7 +109,8 @@ class Table:
 
 class App:
     def __init__(self, root) -> None:
-        self.items = os.listdir(root)
+        do = Placeholder(root)
+        self.items = do.items
         self.terminal_height: int = os.get_terminal_size().lines
         self.terminal_width: int = os.get_terminal_size().columns
         self.visible_items = self.items[0:0+self.terminal_height - 4]
@@ -81,7 +158,7 @@ class App:
                 break
 
             if key == curses.KEY_DOWN:
-                if self.x < self.terminal_height - 2:
+                if self.x <= len(self.lines) + self.header_size - 2 and self.x < self.terminal_height - 2:
                     self.x += 1
                     x = self.x - self.header_size
                     self.__print_line(stdscr, self.x - 1, self.lines[x - 1])
@@ -111,6 +188,10 @@ class App:
 
 
 if __name__ == '__main__':
-    root = 'D:\\Work'
-    app = App(root=root)
+    # path = 'D:\\Work'
+    path = 'D:\\Work\\terminal-file-manager'
+    app = App(root=path)
     app.run()
+
+    # do = Placeholder(path)
+    # print(do.items)
