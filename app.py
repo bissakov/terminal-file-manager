@@ -55,7 +55,7 @@ class Placeholder:
         i = int(math.floor(math.log(size_bytes, 1024)))
         p = math.pow(1024, i)
         s = round(size_bytes / p)
-        return '%s %s' % (s, size_name[i])
+        return f'{s} {size_name[i]}'
 
     def convert_from_unix(self, ts):
         return datetime.fromtimestamp(ts).strftime('%d-%m-%Y %H:%M:%S')
